@@ -23,7 +23,7 @@ namespace currency
         List<string> lessThan20List = new List<string> { "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen" };
         List<string> tensList = new List<string> { "", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety" };
         string finalResult = "";
-        string centResult = "";
+
         public MainWindow()
         {
             InitializeComponent();
@@ -32,40 +32,65 @@ namespace currency
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             finalResult = "";
-            centResult = "";
-            convert(input.Text);
+            convertIntegerAndDecimal(input.Text.Trim());
+            output.Text = finalResult;
         }
 
-        public void convert(string inputString)
+        public void convertIntegerAndDecimal(string inputString)
         {
-            string[] inputArray = inputString.Split(',');
+            string[] inputArray = { };
+            // Separate the integer part from the decimal part
+            inputArray = inputString.Split(',');
 
-            //Special case for 0 dollars
+            // Make sure number is valid format
+            if (!inputArray[0].All(char.IsDigit))
+            {
+                invalidNumber();
+                return;
+            }
+
+            // Special case for 0 dollars, to avoid "50" => Fifty Zero
             if (Int32.Parse(inputArray[0]) == 0)
             {
                 finalResult = "Zero dollars";
             }
             else
             {
-                finalResult = convertInteger(Int32.Parse(inputArray[0])) + " dollars";
+                //Special case for "1 dollar" to remove 's' from dollars
+                if (Int32.Parse(inputArray[0]) == 1)
+                {
+                    finalResult = "One dollar";
+                }
+                else
+                {   //Convert Integer part of the number
+                    finalResult = convertInteger(Int32.Parse(inputArray[0])) + " dollars";
+                }
             }
 
-            // check if the input is dobule
+            // Check if the input is decimal/double
             if (inputArray.Length > 1)
             {
-                convertCent(inputArray[1]);
-                finalResult += " and " + centResult;
+                // Make sure number is valid format
+                if (!inputArray[1].All(char.IsDigit))
+                {
+                    invalidNumber();
+                    return;
+                }
+                finalResult += " and " + convertDecimal(inputArray[1]);
             }
-            output.Text = finalResult;
+        }
 
+        private void invalidNumber()
+        {
+            finalResult = "The number is not in correct fromat";
         }
 
         private string convertInteger(int inputNumber)
         {
             string IntegerResult = "";
-            int digits = (inputNumber + "").Length;
-
-            switch (digits)
+            int numberOfDigits = (inputNumber + "").Length;
+            // Will go through each digit and convert it
+            switch (numberOfDigits)
             {
                 case 0:
                     finalResult = "No valid number found";
@@ -128,34 +153,36 @@ namespace currency
             return IntegerResult;
         }
 
-        private void convertCent(string centString)
+        private string convertDecimal(string centString)
         {
-            //case 5.00
+            string centResult = "";
+            // Case 5.00
             if (Int32.Parse(centString) == 0)
             {
                 centResult = "Zero";
             }
-            // case 5.05
+            // Case 5.05
             if (centString[0] == 0)
             {
                 centResult += convertOneDigit(Int32.Parse(centString));
             }
             else
             {
-                //case 5.1, 5.9
+                // Case 5.1, 5.9
                 if (centString.Length == 1)
                 {
                     centResult += convertTwoDigits(Int32.Parse(centString) * 10);
 
                 }
-                //length has 2 digits, case 5.10, 5.99
+                // Length has 2 digits, case 5.10, 5.99
                 else
                 {
                     centResult += convertTwoDigits(Int32.Parse(centString));
                 }
-
             }
             centResult += " cents";
+
+            return centResult;
         }
 
         private string convertOneDigit(int inputNumber)
@@ -173,7 +200,9 @@ namespace currency
             {
                 return convertInteger(inputNumber);
             }
-            return tensList[(inputNumber / 10) % 10] + " " + convertInteger(inputNumber % 10);
+            string unitString = convertInteger(inputNumber % 10);
+            // If unitString is not empty for example 21, add '-' between units and tens, else for example :20, 50, 60 add nothing
+            return tensList[(inputNumber / 10) % 10] +(unitString != "" ? "-" + unitString : "") ;
         }
         private string convertThreeDigits(int inputNumber)
         {
